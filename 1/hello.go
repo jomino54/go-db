@@ -13,6 +13,7 @@ import (
 
 	//"os"
 
+    "regexp"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -73,16 +74,18 @@ func insertData(args []string, input string) {
 
 		fmt.Println("INSERT DATA")
 		var firstPart = input[:strings.Index(input, "values")]
-		var table = strings.TrimPrefix(firstPart, "insert into")
-		var values = strings.TrimPrefix(input, "insert into" + table + "values")
+		var tableAndFields = strings.TrimPrefix(firstPart, "insert into")
+		var fieldReg = regexp.MustCompile(`\((.*?)\)`)
+		var tableName = fieldReg.ReplaceAllString(tableAndFields, "")
+		var values = strings.TrimPrefix(input, "insert into" + tableAndFields + "values")
 
-		table = strings.TrimSpace(table)
+		tableName = strings.TrimSpace(tableName)
 
 		values = strings.TrimSpace(values)
 		values = strings.Trim(values,"()")
 		var valuesArr = strings.Split(values, ", ")
 
-		file, err := os.OpenFile(table + ".csv", os.O_RDWR, 0755)
+		file, err := os.OpenFile(tableName + ".csv", os.O_RDWR, 0755)
 		if err != nil {
 			panic(err)
 		}
@@ -104,9 +107,7 @@ func insertData(args []string, input string) {
 			tableRows = append(tableRows, record)
 		}
 
-		fmt.Println(tableRows[0], " ", len(tableRows[0]), " ", len(valuesArr))
-
-		if len(tableRows[0]) - 1 == len(valuesArr)  {
+		if len(tableRows[0]) == len(valuesArr)  {
 			var len = len(tableRows)
 
 			var record []string
@@ -114,6 +115,8 @@ func insertData(args []string, input string) {
 			for _, value := range valuesArr {
 				record = append(record, value)
 			}
+
+			fmt.Println(record)
 
 			err := writer.Write(record)
 
